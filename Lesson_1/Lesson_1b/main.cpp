@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
-    QCoreApplication::setApplicationName("Qt QOpenGLWidget Lesson 1a");
+    QCoreApplication::setApplicationName("Qt QOpenGLWidget Lesson 1b");
     QCoreApplication::setOrganizationName("Bla");
     QCoreApplication::setApplicationVersion(QT_VERSION_STR);
 

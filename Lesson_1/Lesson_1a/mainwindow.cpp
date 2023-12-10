@@ -15,9 +15,12 @@
 
 #include <QMainWindow>
 
+const QString MainWindow::APP_TITLE = "Lesson 1a OpenGL";
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow{parent}
 {
+    setWindowTitle(APP_TITLE);
     resize(500,500);
 
     GLWidget *glwidget = new GLWidget(this);

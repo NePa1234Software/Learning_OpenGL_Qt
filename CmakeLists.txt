@@ -8,3 +8,4 @@ LANGUAGES CXX)
 # a - using just the OpenGL wrapper
 # b - using more OpenGL helper classes from Qt
 add_subdirectory(Lesson_1/Lesson_1a)
+add_subdirectory(Lesson_1/Lesson_1b)

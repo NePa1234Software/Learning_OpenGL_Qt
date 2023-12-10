@@ -1,5 +1,3 @@
-#version 330 core
-
 //-----------------------------------------------------------------------------
 // Author: Neil Parker
 // Date: 12/2023
@@ -12,13 +10,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //-----------------------------------------------------------------------------
 
-// draw color is set by the application on each update
-uniform vec4 vertColor;
+#include "mainwindow.h"
+#include "glwidget.h"
 
-// Color of the fragment (texel)
-out vec4 frag_color;
+#include <QMainWindow>
 
-void main()
+const QString MainWindow::APP_TITLE = "Lesson 1b OpenGL";
+
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow{parent}
 {
-    frag_color = vertColor;
+    setWindowTitle(APP_TITLE);
+    resize(500,500);
+
+    GLWidget *glwidget = new GLWidget(this);
+    setCentralWidget(glwidget);
 }

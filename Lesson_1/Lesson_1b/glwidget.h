@@ -19,9 +19,13 @@
 #include <QOpenGLFunctions_3_3_Core>
 #include <QTime>
 
+#include <QOpenGLBuffer>
+#include <QOpenGLVertexArrayObject>
+
 ///
 /// \brief The GLWidget class uses QOpenGLWidget which will provide the OpenGL context and render target.
 /// QOpenGLFunctions_3_3_Core will give access to all OpenGL function of this version.
+/// New to Lesson 1b is the use of the classes : QOpenGLBuffer
 ///
 class GLWidget : public QOpenGLWidget, public QOpenGLFunctions_3_3_Core // QOpenGLFunctions for newest
 {
@@ -45,6 +49,7 @@ private slots:
     // QOpenGLWidget signal handlers
     void onFrameSwapped();
     void onAboutToCompose();
+    void cleanup();
 
 private:
     // Helper
@@ -53,9 +58,9 @@ private:
     // Scene data
     ShaderProgram m_shaderProgram;
     QColor m_background {Qt::red};
-    GLuint m_vbo {0};
-    GLuint m_ibo {0};
-    GLuint m_vao {0};
+    QOpenGLBuffer m_vbo;
+    QOpenGLBuffer m_ibo;
+    QOpenGLVertexArrayObject m_vao;
 
     // Statistics data
     unsigned int m_frameCount {0};
