@@ -1,5 +1,5 @@
 # Learning_OpenGL_Qt
-Using modern OpenGL with the Qt framework. 
+Using modern OpenGL with the Qt framework using the [OpenGL module](https://doc.qt.io/qt-6/qtopengl-index.html). 
 
 # Disclaimer/Acknowledgement
 Note that I am NOT an expert at OpenGL. Instead I am learning through from the 
