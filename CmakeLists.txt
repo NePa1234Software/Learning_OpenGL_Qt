@@ -1,0 +1,10 @@
+cmake_minimum_required(VERSION 3.24)
+
+project(learnopenglqt
+DESCRIPTION "Step for step learning to use OpenGL with Qt"
+LANGUAGES CXX)
+
+# Lesson 1 will make a simple square move around the viewport
+# a - using just the OpenGL wrapper
+# b - using more OpenGL helper classes from Qt
+add_subdirectory(Lesson_1/Lesson_1a)
