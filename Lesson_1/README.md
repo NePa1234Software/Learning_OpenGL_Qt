@@ -3,11 +3,11 @@ Using modern OpenGL with the Qt framework.
 
 # Disclaimer/Acknowledgement
 Note that I am NOT an expert at OpenGL. Instead I am learning through from the 
-Udemy Course - https://www.udemy.com/course/learn-modern-opengl-programming by Steve Jones. There is no aim to copy or steal the software, this project aims to demonstrate how Qt integrates OpenGL into the framework and which helper classes are provided.
+Udemy Course - https://www.udemy.com/course/learn-modern-opengl-programming by Steve Jones who is one. This Udemy course has inspired me to make this project and aims to demonstrate how Qt integrates OpenGL into its framework and which helper classes are provided.
 
 # Lesson
-Lesson 1 - will set up the basic OpenGL pipeline and demonstrate the vertex and fragment shader usage. Uniform variables are used to communicated between the application and the shader program.
-Lesson 1 a - will uses the lowest level OpenGL calls without any further Qt helper classes.
+- Lesson 1 - will set up the basic OpenGL pipeline and demonstrate the vertex and fragment shader usage. Uniform variables are used to communicated between the application and the shader program.
+- Lesson 1 a - will uses the lowest level OpenGL calls without any further Qt helper classes.
 Only the minimum QOpenGLWidget and QOpenGLFunctions_3_3_Core classes are used.
 
 # Code structure - Common to all lessons.
