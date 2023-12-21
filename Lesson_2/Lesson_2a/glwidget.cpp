@@ -12,6 +12,7 @@
 
 #include "mainwindow.h"
 #include "glwidget.h"
+#include "texture2D.h"
 
 #include <QApplication>
 #include <QDebug>
@@ -20,10 +21,7 @@
 #include <QElapsedTimer>
 #include <QTime>
 
-GLWidget::GLWidget(QWidget *parent)
-    : QOpenGLWidget(parent)
-    , m_vbo(QOpenGLBuffer::VertexBuffer)
-    , m_ibo(QOpenGLBuffer::IndexBuffer)
+GLWidget::GLWidget(QWidget *parent) : QOpenGLWidget(parent)
 {
     // No need to do any OpenGL stuff here as Qt will
     // Call initializeGL after setting the currect context.
@@ -35,8 +33,11 @@ GLWidget::GLWidget(QWidget *parent)
 
 GLWidget::~GLWidget()
 {
-    qInfo() << "Shutdown : glwidget destructor";
-    cleanup();
+    qInfo() << "Shutdown : cleanup";
+    // Cleanup
+    glDeleteVertexArrays(1, &m_vao);
+    glDeleteBuffers(1, &m_vbo);
+    glDeleteBuffers(1, &m_ibo);
 }
 
 void GLWidget::timerEvent(QTimerEvent *event)
@@ -56,16 +57,15 @@ void GLWidget::initializeGL()
     qInfo() << "Initialize : OpenGL wrapper (Qt)";
     initializeOpenGLFunctions();
     initializeStatistics();
-    connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &GLWidget::cleanup, Qt::DirectConnection);
 
     qInfo() << "Initialize : Vertex Buffer Object (vbo)";
     // Set up an array of vertices for a quad (2 triangls)
     // with an index buffer data
     GLfloat vertices[] = {
-        -0.5f,  0.5f, 0.0f,		// Top left
-         0.5f,  0.5f, 0.0f,		// Top right
-         0.5f, -0.5f, 0.0f,		// Bottom right
-        -0.5f, -0.5f, 0.0f		// Bottom left
+        -0.5f,  0.5f, 0.0f,   0.0f, 1.0f,  // Top left
+         0.5f,  0.5f, 0.0f,	  1.0f, 1.0f,  // Top right
+         0.5f, -0.5f, 0.0f,	  1.0f, 0.0f,  // Bottom right
+        -0.5f, -0.5f, 0.0f,	  0.0f, 0.0f   // Bottom left
     };
 
     GLuint indices[] = {
@@ -73,21 +73,16 @@ void GLWidget::initializeGL()
         0, 2, 3   // Second Triangle
     };
 
-    // Request OpenGL to create new Vertex Array Object (VAO)
-    // "bind" - make it the current one for following commands
-    if (!m_vao.create()) {
-        qWarning() << "Initialize : vbo failed!";
-        return;
-    }
-
-    // bind and unbind when going out of scope
-    QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
-
     // Set up vertex buffer(s) on the GPU
+    // Generate 1 empty vertex buffer on the GPU
+    glGenBuffers(1, &m_vbo);
+
+    // "bind", which means set as the current buffer the next command apply to
     // GL_ARRAY_BUFFER (Vertex attributes)
     // https://registry.khronos.org/OpenGL-Refpages/es3/html/glBindBuffer.xhtml
-    // Generate 1 empty vertex buffer on the GPU
-    //
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+
+    qInfo() << "Initialize : Vertex Array Object (vao)";
     // Copy the vertex data from CPU to GPU
     // STREAM
     //  The data store contents will be modified once and used at most a few times.
@@ -95,64 +90,47 @@ void GLWidget::initializeGL()
     //  The data store contents will be modified once and used many times.
     // DYNAMIC
     //  The data store contents will be modified repeatedly and used many times.
-    //
-    // StaticDraw is STATIC write only
-    //
-    // "bind" which means set as the current buffer the next command apply to
-    //
     // https://registry.khronos.org/OpenGL-Refpages/es3/html/glBufferData.xhtml
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    if (!m_vbo.create()) {
-        qWarning() << "Initialize : vbo failed!";
-        return;
-    }
-    m_vbo.bind();
-    m_vbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
-    m_vbo.allocate(&vertices, sizeof(vertices));
+    // Request OpenGL to create new Vertex Array Object (VAO)
+    glGenVertexArrays(1, &m_vao);
 
-    qInfo() << "Initialize : Vertex Array Object (vao)";
+    // "bind" - make it the current one for following commands
+    glBindVertexArray(m_vao);
 
-    // Define a simple layout for the first vertex buffer (index 0)
+    // Define a layout for the first vertex buffer (index 0)
     // https://registry.khronos.org/OpenGL-Refpages/es3/html/glVertexAttribPointer.xhtml
     // 3 floats of data that should not be normalized (data is normalized to the viewport already)
-    // Stride of 0 states that the data is tightly packed (3x4=12 bytes per vertex, stride is then 12)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+    // Stride of 5 floats (3x4=12 bytes per vertex + 2x4=8 bytes for texture position, stride is then 20)
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(0));
 
     // Enable the first attribute or attribute index 0
     glEnableVertexAttribArray(0);
 
+    // Same stride but offset is 3*3 floats
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(1);
+
     // Set up index buffer which is used to indexed based vertex lookup
     // which reduces the number of vertices. Instead of 6, now we only need 4 vertices.
-    qInfo() << "Initialize : Vertex Index Object (vao)";
+    qInfo() << "Initialize : Vertex Index Object (ibo)";
+    glGenBuffers(1, &m_ibo);	// Create buffer space on the GPU for the index buffer
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    if (!m_ibo.create()) {
-        qWarning() << "Initialize : ibo failed!";
-        return;
-    }
-    m_ibo.bind();
-    m_ibo.setUsagePattern(QOpenGLBuffer::StaticDraw);
-    m_ibo.allocate(&indices, sizeof(indices));
+    // "unbind" is good to make sure other code doesn't change it elsewhere
+    glBindVertexArray(0);
 
     qInfo() << "Initialize : Shaders ";
-    m_shaderProgram.loadShaders(":/Shaders/basic.vert",
-                                ":/Shaders/basic.frag");
+    m_shaderProgram.loadShaders(":/Shaders/basictexture.vert",
+                                ":/Shaders/basictexture.frag");
+
+    m_texture.loadTexture(":/Images/funpic.jpg", true);
 
     qInfo() << "Initialize : DONE ... start the update timer";
     m_programStart = QTime::currentTime();
     startTimer(10);
-}
-
-void GLWidget::cleanup()
-{
-    qInfo() << "Shutdown : cleanup";
-
-    makeCurrent();
-    m_shaderProgram.unloadShaders();
-    m_vbo.destroy();
-    doneCurrent();
-
-    // Disconnect to the current context
-    QObject::disconnect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &GLWidget::cleanup);
 }
 
 void GLWidget::paintGL()
@@ -162,6 +140,8 @@ void GLWidget::paintGL()
     // Clear the viewport
     glClearColor(m_background.redF(), m_background.greenF(), m_background.blueF(), 1.0f);
     glClear(GL_COLOR_BUFFER_BIT); // | GL_DEPTH_BUFFER_BIT);
+
+    m_texture.bind();
 
     // Render the rectangle (two triangles)
     // Must be called BEFORE setting uniforms because setting uniforms
@@ -188,8 +168,8 @@ void GLWidget::paintGL()
     pos.setY( cos(timeSecs) / 2.0 );
     m_shaderProgram.setUniform("posOffset", pos);
 
-    // Before we draw the vertices "bind" (select) to the vao first, unbind when object goes out of scope
-    QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
+    // We want to draw the vertices so "bind" (select) the vao first
+    glBindVertexArray(m_vao);
 
     // The triangles will be drawn with this mode
     glPolygonMode(GL_FRONT_AND_BACK, m_wireframeMode ? GL_LINE : GL_FILL);
@@ -197,7 +177,8 @@ void GLWidget::paintGL()
     // Draw the "elements" - 0 offset
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-    m_shaderProgram.release();
+    // "unbind" to ensure no further changes the vao can be made
+    glBindVertexArray(0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

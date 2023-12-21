@@ -22,7 +22,6 @@
 #include <QVector3D>
 #include <QVector4D>
 #include <QOpenGLFunctions_3_3_Core>
-#include <QOpenGLShaderProgram>
 
 ///
 /// \brief The ShaderProgram class uses the OpenGL Core 330 Wrapper which
@@ -42,19 +41,12 @@ public:
     // This initializes the QOpenGLFunctions for the current OpenGL context
     bool loadShaders(const QString & vsFilename, const QString & fsFilename);
 
-    // Cleanup
-    void unloadShaders();
-
     // Apply this shader program
     void use();
 
-    // Unbind this shader program
-    void release();
-
-    // Program handle
     GLuint getProgram() const
     {
-        return m_program ? m_program->programId() : 0;
+        return m_Handle;
     }
 
     // Set the uniform by name
@@ -67,12 +59,16 @@ private:
     void initializeGL();
 
     // Read the file into a string. String is empty on failure and error logged
-    QString readFileToString(const QString & filename);
+    std::string readFileToString(const QString & filename);
+
+    // Return false if compilation errors occured. Errors are logged
+    bool checkCompilationResult(GLuint shader, const QString & filename);
+    bool checkLinkingResult(GLuint shader);
 
     // Find and keep location to the uniform by exact name
-    int getUniformLocation(const GLchar * name);
+    GLint getUniformLocation(const GLchar * name);
 
-    // Shader program
-    QOpenGLShaderProgram * m_program {nullptr};
-    QMap<QString, int> m_UniformLocations;
+    GLuint m_Handle {0};
+    QMap<QString, GLint> m_UniformLocations;
+    QOpenGLContext *m_context {nullptr};
 };

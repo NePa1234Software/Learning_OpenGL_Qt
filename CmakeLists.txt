@@ -9,3 +9,9 @@ LANGUAGES CXX)
 # b - using more OpenGL helper classes from Qt
 add_subdirectory(Lesson_1/Lesson_1a)
 add_subdirectory(Lesson_1/Lesson_1b)
+
+# Lesson 2 will make a simple image based texture move around the viewport
+# a - using just the OpenGL wrapper
+# b - using more OpenGL helper classes from Qt
+add_subdirectory(Lesson_2/Lesson_2a)
+add_subdirectory(Lesson_2/Lesson_2b)

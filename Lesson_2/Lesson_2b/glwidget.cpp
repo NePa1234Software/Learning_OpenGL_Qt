@@ -12,6 +12,7 @@
 
 #include "mainwindow.h"
 #include "glwidget.h"
+#include "texture2D.h"
 
 #include <QApplication>
 #include <QDebug>
@@ -35,7 +36,7 @@ GLWidget::GLWidget(QWidget *parent)
 
 GLWidget::~GLWidget()
 {
-    qInfo() << "Shutdown : glwidget destructor";
+    qInfo() << "Shutdown : cleanup";
     cleanup();
 }
 
@@ -62,10 +63,10 @@ void GLWidget::initializeGL()
     // Set up an array of vertices for a quad (2 triangls)
     // with an index buffer data
     GLfloat vertices[] = {
-        -0.5f,  0.5f, 0.0f,		// Top left
-         0.5f,  0.5f, 0.0f,		// Top right
-         0.5f, -0.5f, 0.0f,		// Bottom right
-        -0.5f, -0.5f, 0.0f		// Bottom left
+        -0.5f,  0.5f, 0.0f,   0.0f, 1.0f,  // Top left
+         0.5f,  0.5f, 0.0f,	  1.0f, 1.0f,  // Top right
+         0.5f, -0.5f, 0.0f,	  1.0f, 0.0f,  // Bottom right
+        -0.5f, -0.5f, 0.0f,	  0.0f, 0.0f   // Bottom left
     };
 
     GLuint indices[] = {
@@ -116,10 +117,14 @@ void GLWidget::initializeGL()
     // https://registry.khronos.org/OpenGL-Refpages/es3/html/glVertexAttribPointer.xhtml
     // 3 floats of data that should not be normalized (data is normalized to the viewport already)
     // Stride of 0 states that the data is tightly packed (3x4=12 bytes per vertex, stride is then 12)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(0));
 
     // Enable the first attribute or attribute index 0
     glEnableVertexAttribArray(0);
+
+    // Same stride but offset is 3*3 floats
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(1);
 
     // Set up index buffer which is used to indexed based vertex lookup
     // which reduces the number of vertices. Instead of 6, now we only need 4 vertices.
@@ -134,12 +139,15 @@ void GLWidget::initializeGL()
     m_ibo.allocate(&indices, sizeof(indices));
 
     qInfo() << "Initialize : Shaders ";
-    m_shaderProgram.loadShaders(":/Shaders/basic.vert",
-                                ":/Shaders/basic.frag");
+    m_shaderProgram.loadShaders(":/Shaders/basictexture.vert",
+                                ":/Shaders/basictexture.frag");
+
+    m_texture.loadTexture(":/Images/funpic.jpg", true);
 
     qInfo() << "Initialize : DONE ... start the update timer";
     m_programStart = QTime::currentTime();
-    startTimer(10);
+    m_timerId = startTimer(10);
+    m_timerStarted = true;
 }
 
 void GLWidget::cleanup()
@@ -154,7 +162,6 @@ void GLWidget::cleanup()
     // Disconnect to the current context
     QObject::disconnect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &GLWidget::cleanup);
 }
-
 void GLWidget::paintGL()
 {
     // NOTE: no logging here, this function is called very often
@@ -162,6 +169,8 @@ void GLWidget::paintGL()
     // Clear the viewport
     glClearColor(m_background.redF(), m_background.greenF(), m_background.blueF(), 1.0f);
     glClear(GL_COLOR_BUFFER_BIT); // | GL_DEPTH_BUFFER_BIT);
+
+    m_texture.bind();
 
     // Render the rectangle (two triangles)
     // Must be called BEFORE setting uniforms because setting uniforms
@@ -197,7 +206,8 @@ void GLWidget::paintGL()
     // Draw the "elements" - 0 offset
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-    m_shaderProgram.release();
+    // "unbind" to ensure no further changes the vao can be made
+    glBindVertexArray(0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -222,6 +232,15 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
     case Qt::Key_W:
         m_wireframeMode = !m_wireframeMode;
         qInfo() << "Application - toggle wireframe mode." << m_wireframeMode;
+        break;
+    case Qt::Key_T:
+        m_timerStarted = !m_timerStarted;
+        if (m_timerStarted)
+            m_timerId = startTimer(10);
+        else
+            killTimer(m_timerId);
+
+        qInfo() << "Application - toggle timer." << m_timerStarted;
         break;
     }
 }
