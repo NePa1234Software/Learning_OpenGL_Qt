@@ -8,6 +8,7 @@ Udemy Course - https://www.udemy.com/course/learn-modern-opengl-programming by S
 # Lesson
 Lesson 1 - will set up the basic OpenGL pipeline and demonstrate the vertex and fragment shader usage. Uniform variables are used to communicated between the application and the shader program.
 Lesson 2 - build upon lesson 1 adding an image based 2D texture.
+Lesson 3 - 3D objects and texturing. Matrices - model, view and perspective matrices. Translation, Rotation and Scaling (Model matrix = TRS matrix)
 
 # Code structure - Common to all lessons.
 In main.cpp the default surface format is initialized and the OpenGL Core profile is enabled.

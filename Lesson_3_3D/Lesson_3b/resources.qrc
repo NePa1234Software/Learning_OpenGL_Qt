@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>Shaders/basictexture.frag</file>
+        <file>Shaders/basictexture.vert</file>
+        <file>Images/funpic.jpg</file>
+    </qresource>
+</RCC>

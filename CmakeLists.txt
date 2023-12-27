@@ -15,3 +15,9 @@ add_subdirectory(Lesson_1/Lesson_1b)
 # b - using more OpenGL helper classes from Qt
 add_subdirectory(Lesson_2/Lesson_2a)
 add_subdirectory(Lesson_2/Lesson_2b)
+
+# Lesson 3 will make a simple 3D cube using texture move around 3D global space
+# a - using just the OpenGL wrapper
+# b - using more OpenGL helper classes from Qt
+add_subdirectory(Lesson_3_3D/Lesson_3a)
+add_subdirectory(Lesson_3_3D/Lesson_3b)
