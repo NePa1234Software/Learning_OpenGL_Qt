@@ -68,6 +68,7 @@ private:
 
     // Camera
     FPSCamera m_fpsCamera;
+    OrbitCamera m_orbitCamera;
 
     // Statistics data
     unsigned int m_frameCount {0};
@@ -77,4 +78,5 @@ private:
 
     // User interaction
     bool m_wireframeMode {false};
+    bool m_orbitalCameraMode {false};
 };

@@ -25,7 +25,8 @@
 
 GLWidget::GLWidget(QWidget *parent)
     : QOpenGLWidget(parent)
-    , m_fpsCamera(QVector3D(0.0f, 0.0f, 5.0f), QVector3D(1.0f, 1.0f, 1.0f))
+    , m_fpsCamera(QVector3D(0.0f, 0.0f, 10.0f), QVector3D(0.0f, 0.0f, 0.0f))
+    , m_orbitCamera()
 {
     // No need to do any OpenGL stuff here as Qt will
     // Call initializeGL after setting the currect context.
@@ -197,12 +198,19 @@ void GLWidget::paintGL()
     // Model TSR (rotate, scale, then translate)
     // no rotate
     // scale
-    model.scale(1.0f + sin(timeSecs) * 0.1f);
+    model.scale(1.0f + sin(timeSecs) * 0.05f);
     // translate
     model.translate(m_cubePos);
 
     // Create the view matrix using the new camera class
-    view = m_fpsCamera.getViewMatrix();
+    if (m_orbitalCameraMode)
+    {
+        view = m_orbitCamera.getViewMatrix();
+    }
+    else
+    {
+        view = m_fpsCamera.getViewMatrix();
+    }
 
     // Create the projection matrix
     projection.perspective(m_fpsCamera.getFOV(), width()/height(), 0.1f, 100.0f);
@@ -270,11 +278,19 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         m_wireframeMode = !m_wireframeMode;
         qInfo() << "Application - toggle wireframe mode." << m_wireframeMode;
         break;
+    case Qt::Key_F3:
+        m_orbitalCameraMode = !m_orbitalCameraMode;
+        m_fpsCamera.setPosition(QVector3D(0.0f, 0.0f, 10.0f));
+        m_fpsCamera.setRotation(0.0f, 0.0f);
+        qInfo() << "Application - toggle orbital camera mode." << m_orbitalCameraMode;
+        break;
     case Qt::Key_W: // Camera forward (-z)
         m_fpsCamera.move(QVector3D(0.0f, 0.0f, -speedMove));
+        m_orbitCamera.setRadius(m_orbitCamera.radius()-speedMove);
         break;
     case Qt::Key_S: // Camera backup (+z)
         m_fpsCamera.move(QVector3D(0.0f, 0.0f, speedMove));
+        m_orbitCamera.setRadius(m_orbitCamera.radius()+speedMove);
         break;
     case Qt::Key_A: // Camera move left
         m_fpsCamera.move(QVector3D(-speedMove, 0.0f, 0.0f));
@@ -282,17 +298,24 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
     case Qt::Key_D: // Camera move right
         m_fpsCamera.move(QVector3D(speedMove, 0.0f, 0.0f));
         break;
+    case Qt::Key_L: // Camera move right
+        m_orbitCamera.setLookAt(m_cubePos);
+        break;
     case Qt::Key_Left: // Yaw to left
         m_fpsCamera.rotate(speedRotateDeg, 0.0f);
+        m_orbitCamera.rotate(-speedRotateDeg, 0.0f);
         break;
     case Qt::Key_Right:// Yaw to right
         m_fpsCamera.rotate(-speedRotateDeg, 0.0f);
+        m_orbitCamera.rotate(speedRotateDeg, 0.0f);
         break;
     case Qt::Key_Up: // Pitch down
         m_fpsCamera.rotate(0.0f, -speedRotateDeg);
+        m_orbitCamera.rotate(0.0f, -speedRotateDeg);
         break;
     case Qt::Key_Down: // Pitch up
         m_fpsCamera.rotate(0.0f, speedRotateDeg);
+        m_orbitCamera.rotate(0.0f, speedRotateDeg);
         break;
     }
 }

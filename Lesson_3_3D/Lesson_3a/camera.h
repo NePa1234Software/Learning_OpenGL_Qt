@@ -16,80 +16,94 @@
 #include <QOpenGLFunctions_3_3_Core>
 #include <QMatrix4x4>
 
-class Camera
+class ICamera
 {
 public:
     QMatrix4x4 getViewMatrix() const;
 
-    virtual void setPosition(const QVector3D& position) {}
-    virtual void rotate(float yaw, float pitch) {}  // in degrees
-    virtual void move(const QVector3D& offsetPos) {}
+    virtual void setPosition(const QVector3D& position) = 0;
+    QVector3D position() const { return m_Position; }
+    virtual void rotate(float yawDegrees, float pitchDegrees) = 0;
+    virtual void setRotation(float yawDegrees, float pitchDegrees) = 0;
+    virtual void move(const QVector3D& offsetPos) = 0;
 
     const QVector3D& getLook() const;
     const QVector3D& getRight() const;
     const QVector3D& getUp() const;
 
-	float getFOV() const   { return mFOV; }
-	void setFOV(float fov) { mFOV = fov; }		// in degrees
+    float getFOV() const   { return m_FovDegrees; }
+    void setFOV(float fovDegrees) { m_FovDegrees = fovDegrees; }
 
 protected:
-	Camera();
+    ICamera();
+    virtual ~ICamera() = default;
 
-	virtual void updateCameraVectors() {}
+    virtual void updateCameraVectors() = 0;
 
-    QVector3D mPosition;
-    QVector3D mTargetPos;
-    QVector3D mLook;
-    QVector3D mUp;
-    QVector3D mRight;
+    QVector3D m_Position;
+    QVector3D m_TargetPos;
+    QVector3D m_Look; // Forward vector
+    QVector3D m_Up;
+    QVector3D m_Right;
     const QVector3D WORLD_UP;
 
-	// Euler Angles (in radians)
-	float mYaw;
-	float mPitch;
+    // Euler Angles (in degrees)
+    float m_YawDeg;
+    float m_PitchDeg;
 
 	// Camera parameters
-	float mFOV; // degrees
+    float m_FovDegrees;
 };
 
 //--------------------------------------------------------------
 // FPS Camera Class
 //--------------------------------------------------------------
-class FPSCamera : public Camera
+class FPSCamera : public ICamera
 {
 public:
 
-    FPSCamera(QVector3D position = QVector3D(0.0f, 0.0f, 0.0f), float yaw = M_PI, float pitch = 0.0f); // (yaw) initial angle faces -Z
+    FPSCamera(QVector3D position = QVector3D(0.0f, 0.0f, 0.0f), float yawDegrees = 180.0, float pitch = 0.0f); // (yaw) initial angle faces -Z
     FPSCamera(QVector3D position, QVector3D target);
-    virtual void setPosition(const QVector3D& position);
-	virtual void rotate(float yaw, float pitch);	// in degrees
-    virtual void move(const QVector3D& offsetPos);
 
-private:
+    void setPosition(const QVector3D& position) override;
+    void rotate(float yawDegrees, float pitchDegrees) override;
+    void setRotation(float yawDegrees, float pitchDegrees) override;
+    void move(const QVector3D& offsetPos) override;
 
-	void updateCameraVectors();
+protected:
+
+    void updateCameraVectors() override;
 };
 
 
 //--------------------------------------------------------------
 // Orbit Camera Class
 //--------------------------------------------------------------
-class OrbitCamera : public Camera
+class OrbitCamera : public ICamera
 {
 public:
 
 	OrbitCamera();
 
-	virtual void rotate(float yaw, float pitch);    // in degrees
+    void rotate(float yawDegrees, float pitchDegrees) override;
+    void setRotation(float yawDegrees, float pitchDegrees) override;
 
 	// Camera Controls
     void setLookAt(const QVector3D& target);
-	void setRadius(float radius);
+
+    // Move nearer or further away
+    void setRadius(float radius);
+    float radius() const {return m_Radius; }
+
+protected:
+
+    // Position is not used - so hide it
+    void setPosition(const QVector3D& position) override {};
+    void move(const QVector3D& offsetPos) override {};
+
+    void updateCameraVectors() override;
 
 private:
-
-	void updateCameraVectors();
-
 	// Camera parameters
-	float mRadius;
+    float m_Radius;
 };
