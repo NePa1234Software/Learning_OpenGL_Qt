@@ -12,16 +12,14 @@
 #include "camera.h"
 
 #include <QtMath>
-
-// Default camera values
-const float DEF_FOV = 45.0f; // degrees
+#include <QDebug>
 
 //------------------------------------------------------------
 // Base Camera class constructor
 //------------------------------------------------------------
 ICamera::ICamera()
 : m_Position(QVector3D(0.0f, 0.0f, 10.0f)),
-  m_TargetPos(QVector3D(0.0f, 0.0f, 0.0f)),
+  m_TargetPosition(QVector3D(0.0f, 0.0f, 0.0f)),
   m_Up(QVector3D(0.0f, 1.0f, 0.0f)),
   m_Right(0.0f, 0.0f, 0.0f),
   WORLD_UP(0.0f, 1.0f, 0.0f),
@@ -31,14 +29,22 @@ ICamera::ICamera()
 {
 }
 
+void ICamera::setViewMatrix(const QMatrix4x4 &view)
+{
+    if (view == m_viewMatrix)
+        return;
+    m_viewMatrix = view;
+    qDebug() << "ICamera - view changed :" << view;
+}
+
 //------------------------------------------------------------
 // Base Camera - Returns view matrix
 //------------------------------------------------------------
-QMatrix4x4 ICamera::getViewMatrix()const
+void ICamera::calcViewMatrix()
 {
     QMatrix4x4 vMatrix;
-    vMatrix.lookAt(m_Position, m_TargetPos, m_Up);
-    return vMatrix;
+    vMatrix.lookAt(m_Position, m_TargetPosition, m_Up);
+    setViewMatrix(vMatrix);
 }
 
 //------------------------------------------------------------
@@ -73,6 +79,8 @@ FPSCamera::FPSCamera(QVector3D position, float yawDegrees, float pitchDegrees)
     m_Position = position;
     m_YawDeg = yawDegrees;
     m_PitchDeg = pitchDegrees;
+
+    updateCameraVectors();
 }
 
 //-----------------------------------------------------------------------------
@@ -82,16 +90,7 @@ FPSCamera::FPSCamera(QVector3D position, float yawDegrees, float pitchDegrees)
 FPSCamera::FPSCamera(QVector3D position, QVector3D target)
 {
     m_Position = position;
-    m_TargetPos = target;
-
-	// Calculate the vector that looks at the target from the camera position
-    QVector3D lookDir = position - target;
-
-    // Now Calculate the pitch and yaw from the target look vector.  (radians)
-    m_PitchDeg = qRadiansToDegrees(-atan2(lookDir.y(), sqrt(lookDir.x() * lookDir.x() + lookDir.z() * lookDir.z())));
-    m_YawDeg = qRadiansToDegrees(atan2(lookDir.x(), lookDir.z())) + 180.0;
-
-    updateCameraVectors();
+    setLookAt(target);
 }
 
 //-----------------------------------------------------------------------------
@@ -117,24 +116,44 @@ void FPSCamera::move(const QVector3D& offsetPos)
 //-----------------------------------------------------------------------------
 void FPSCamera::rotate(float yawDegrees, float pitchDegrees)
 {
-    m_YawDeg += yawDegrees;
-    m_PitchDeg += pitchDegrees;
-    setRotation(m_YawDeg, m_PitchDeg);
+    setRotation(yawDegrees + m_YawDeg, pitchDegrees + m_PitchDeg);
 }
 
 void FPSCamera::setRotation(float yawDegrees, float pitchDegrees)
 {
-    m_YawDeg = yawDegrees;
-    m_PitchDeg = pitchDegrees;
+    // Wrap around and keep range 0 to 360 degrees
+    while (yawDegrees >= 360.0f)
+        yawDegrees -= 360.0f;
+    while (yawDegrees < 0.0)
+        yawDegrees += 360.0f;
 
     // Constrain the pitch
-    m_PitchDeg = qBound(-89.9f, m_PitchDeg, 89.9f);
+    pitchDegrees = qBound(-89.9f, pitchDegrees, 89.9f);
 
-    // Wrap around and keep range 0 to 360 degrees
-    if (m_YawDeg > 360.0f)
-        m_YawDeg -= 360.0f;
-    if (m_YawDeg < 0.0)
-        m_YawDeg += 360.0f;
+    // Check for no change
+    if (qFuzzyCompare(m_PitchDeg, pitchDegrees) && qFuzzyCompare(m_YawDeg, yawDegrees) )
+        return;
+
+    // Update the matrices
+    m_YawDeg = yawDegrees;
+    m_PitchDeg = pitchDegrees;
+    updateCameraVectors();
+}
+
+void FPSCamera::setLookAt(const QVector3D& target)
+{
+    if (m_TargetPosition == target)
+        return;
+
+    m_TargetPosition = target;
+
+    // Calculate the vector that looks at the target from the camera position
+    QVector3D lookDir = position() - target;
+
+    // Now Calculate the pitch and yaw from the target look vector.  (radians)
+    m_PitchDeg = qRadiansToDegrees(-atan2(lookDir.y(), sqrt(lookDir.x() * lookDir.x() + lookDir.z() * lookDir.z())));
+    m_YawDeg = qRadiansToDegrees(atan2(lookDir.x(), lookDir.z()));
+
     updateCameraVectors();
 }
 
@@ -148,11 +167,11 @@ void FPSCamera::updateCameraVectors()
 
 	// Calculate the view direction vector based on yaw and pitch angles (roll not considered)
 	// radius is 1 for normalized length
+
     QVector3D look;
     look.setX(cosf(qDegreesToRadians(m_PitchDeg)) * sinf(qDegreesToRadians(m_YawDeg)));
     look.setY(sinf(qDegreesToRadians(m_PitchDeg)));
-    look.setZ(cosf(qDegreesToRadians(m_PitchDeg)) * cosf(qDegreesToRadians(m_YawDeg)));
-
+    look.setZ(cosf(qDegreesToRadians(m_PitchDeg)) * cosf(qDegreesToRadians(m_YawDeg + 180.0f)));
     m_Look = look.normalized();
 
 	// Re-calculate the Right and Up vector.  For simplicity the Right vector will
@@ -160,29 +179,49 @@ void FPSCamera::updateCameraVectors()
     m_Right = QVector3D::crossProduct(m_Look, WORLD_UP).normalized();
     m_Up = QVector3D::crossProduct(m_Right, m_Look).normalized();
 
-    m_TargetPos = m_Position + m_Look;
+    m_TargetPosition = m_Position + m_Look * m_Position.length();
+
+    QMatrix4x4 vMatrix;
+    vMatrix.lookAt(m_Position, m_TargetPosition, m_Up);
+    setViewMatrix(vMatrix);
+
+    qDebug() << QString("FPSCamera - Pitch:%1, Yaw:%2").arg(m_PitchDeg).arg(m_YawDeg);
+    qDebug() << "FPSCamera - Pos:" << m_Position << ", Target:" << m_TargetPosition;
+    qDebug() << "FPSCamera - Look:" << m_Look << ", Right:" << m_Right << ", Up:" << m_Up;
+    calcViewMatrix();
 }
 
 //------------------------------------------------------------
 // OrbitCamera - constructor
 //------------------------------------------------------------
+OrbitCamera::OrbitCamera(float radius, float yawDegrees, float pitchDegrees)
+{
+    setRadius(radius);
+    setRotation(yawDegrees, pitchDegrees);
+}
+
+
 OrbitCamera::OrbitCamera()
-    : m_Radius(10.0f)
-{}
+{
+    setRadius(10.0f);
+    setRotation(0.0f, 0.0f);
+}
 
 //------------------------------------------------------------
 // OrbitCamera - Sets the target to look at
 //------------------------------------------------------------
 void OrbitCamera::setLookAt(const QVector3D& target)
 {
-    m_TargetPos = target;
+    m_TargetPosition = target;
 
     // Calculate the vector that looks at the target from the camera position
     QVector3D lookDir = position() - target;
 
+    m_Radius = lookDir.length();
+
     // Now Calculate the pitch and yaw from the target look vector.  (radians)
     m_PitchDeg = qRadiansToDegrees(-atan2(lookDir.y(), sqrt(lookDir.x() * lookDir.x() + lookDir.z() * lookDir.z())));
-    m_YawDeg = qRadiansToDegrees(atan2(lookDir.x(), lookDir.z())) + 180.0;
+    m_YawDeg = qRadiansToDegrees(atan2(lookDir.x(), lookDir.z()));
 
     updateCameraVectors();
 }
@@ -193,7 +232,13 @@ void OrbitCamera::setLookAt(const QVector3D& target)
 void OrbitCamera::setRadius(float radius)
 {
 	// Clamp the radius
-    m_Radius = qBound(radius, 2.0f, 80.0f);
+    radius = qBound(1.0f, radius, 100.0f);
+
+    if (qFuzzyCompare(m_Radius, radius))
+        return;
+
+    m_Radius = radius;
+
     updateCameraVectors();
 }
 
@@ -203,25 +248,27 @@ void OrbitCamera::setRadius(float radius)
 //------------------------------------------------------------
 void OrbitCamera::rotate(float yawDegrees, float pitchDegrees)
 {
-    m_YawDeg += yawDegrees;
-    m_PitchDeg += pitchDegrees;
-    setRotation(m_YawDeg, m_PitchDeg);
+    setRotation(yawDegrees + m_YawDeg, pitchDegrees + m_PitchDeg);
 }
 
 void OrbitCamera::setRotation(float yawDegrees, float pitchDegrees)
 {
-    m_YawDeg = yawDegrees;
-    m_PitchDeg = pitchDegrees;
+    // Wrap around and keep range 0 to 360 degrees
+    while (yawDegrees >= 360.0f)
+        yawDegrees -= 360.0f;
+    while (yawDegrees < 0.0)
+        yawDegrees += 360.0f;
 
     // Constrain the pitch
-    m_PitchDeg = qBound(-89.9f, m_PitchDeg, 89.9f);
+    pitchDegrees = qBound(-89.9f, pitchDegrees, 89.9f);
 
-    // Wrap around and keep range 0 to 360 degrees
-    if (m_YawDeg > 360.0f)
-        m_YawDeg -= 360.0f;
-    if (m_YawDeg < 0.0)
-        m_YawDeg += 360.0f;
+    // Check for no change
+    if (qFuzzyCompare(m_PitchDeg, pitchDegrees) && qFuzzyCompare(m_YawDeg, yawDegrees) )
+        return;
 
+    // Update the matrices
+    m_YawDeg = yawDegrees;
+    m_PitchDeg = pitchDegrees;
     updateCameraVectors();
 }
 
@@ -233,7 +280,12 @@ void OrbitCamera::updateCameraVectors()
 {
 	// Spherical to Cartesian coordinates
     // https://en.wikipedia.org/wiki/Spherical_coordinate_system (NOTE: Our coordinate sys has Y up not Z)
-    m_Position.setX(m_TargetPos.x() + m_Radius * cosf(qDegreesToRadians(m_PitchDeg)) * sinf(qDegreesToRadians(m_YawDeg)));
-    m_Position.setY(m_TargetPos.y() + m_Radius * sinf(qDegreesToRadians(m_PitchDeg)));
-    m_Position.setZ(m_TargetPos.z() + m_Radius * cosf(qDegreesToRadians(m_PitchDeg)) * cosf(qDegreesToRadians(m_YawDeg)));
+    m_Position.setX(m_TargetPosition.x() + m_Radius * cosf(qDegreesToRadians(m_PitchDeg)) * sinf(qDegreesToRadians(m_YawDeg)));
+    m_Position.setY(m_TargetPosition.y() + m_Radius * sinf(qDegreesToRadians(m_PitchDeg)));
+    m_Position.setZ(m_TargetPosition.z() + m_Radius * cosf(qDegreesToRadians(m_PitchDeg)) * cosf(qDegreesToRadians(m_YawDeg)));
+
+    qDebug() << QString("OrbitCamera - Radius: %1, Pitch:%2, Yaw:%3").arg(m_Radius).arg(m_PitchDeg).arg(m_YawDeg);
+    qDebug() << "OrbitCamera - Pos:" << m_Position << ", Target:" << m_TargetPosition;
+    //qDebug() << "OrbitCamera - Look:" << m_Look << ", Right:" << m_Right << ", Up:" << m_Up;
+    calcViewMatrix();
 }

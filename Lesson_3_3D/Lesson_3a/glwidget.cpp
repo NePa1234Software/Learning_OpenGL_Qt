@@ -26,7 +26,8 @@
 GLWidget::GLWidget(QWidget *parent)
     : QOpenGLWidget(parent)
     , m_fpsCamera(QVector3D(0.0f, 0.0f, 10.0f), QVector3D(0.0f, 0.0f, 0.0f))
-    , m_orbitCamera()
+    , m_orbitCamera(10.0f, 0.0f, 0.0f)
+    , m_orbitalCameraMode(true)
 {
     // No need to do any OpenGL stuff here as Qt will
     // Call initializeGL after setting the currect context.
@@ -205,14 +206,15 @@ void GLWidget::paintGL()
     // Create the view matrix using the new camera class
     if (m_orbitalCameraMode)
     {
-        view = m_orbitCamera.getViewMatrix();
+        view = m_orbitCamera.viewMatrix();
     }
     else
     {
-        view = m_fpsCamera.getViewMatrix();
+        view = m_fpsCamera.viewMatrix();
     }
 
     // Create the projection matrix
+    //projection.setToIdentity();
     projection.perspective(m_fpsCamera.getFOV(), width()/height(), 0.1f, 100.0f);
 
     // Render the rectangle (two triangles)
@@ -282,40 +284,43 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         m_orbitalCameraMode = !m_orbitalCameraMode;
         m_fpsCamera.setPosition(QVector3D(0.0f, 0.0f, 10.0f));
         m_fpsCamera.setRotation(0.0f, 0.0f);
+        m_orbitCamera.setRadius(10.0f);
+        m_orbitCamera.setRotation(0.0f, 0.0f);
         qInfo() << "Application - toggle orbital camera mode." << m_orbitalCameraMode;
         break;
     case Qt::Key_W: // Camera forward (-z)
-        m_fpsCamera.move(QVector3D(0.0f, 0.0f, -speedMove));
-        m_orbitCamera.setRadius(m_orbitCamera.radius()-speedMove);
+        if (!m_orbitalCameraMode) m_fpsCamera.move(QVector3D(0.0f, 0.0f, -speedMove));
+        if (m_orbitalCameraMode) m_orbitCamera.setRadius(m_orbitCamera.radius()-speedMove);
         break;
     case Qt::Key_S: // Camera backup (+z)
-        m_fpsCamera.move(QVector3D(0.0f, 0.0f, speedMove));
-        m_orbitCamera.setRadius(m_orbitCamera.radius()+speedMove);
+        if (!m_orbitalCameraMode) m_fpsCamera.move(QVector3D(0.0f, 0.0f, speedMove));
+        if (m_orbitalCameraMode) m_orbitCamera.setRadius(m_orbitCamera.radius()+speedMove);
         break;
     case Qt::Key_A: // Camera move left
-        m_fpsCamera.move(QVector3D(-speedMove, 0.0f, 0.0f));
+        if (!m_orbitalCameraMode) m_fpsCamera.move(QVector3D(-speedMove, 0.0f, 0.0f));
         break;
     case Qt::Key_D: // Camera move right
-        m_fpsCamera.move(QVector3D(speedMove, 0.0f, 0.0f));
+        if (!m_orbitalCameraMode) m_fpsCamera.move(QVector3D(speedMove, 0.0f, 0.0f));
         break;
     case Qt::Key_L: // Camera move right
-        m_orbitCamera.setLookAt(m_cubePos);
+        if (!m_orbitalCameraMode) m_fpsCamera.setLookAt(m_cubePos);
+        if (m_orbitalCameraMode) m_orbitCamera.setLookAt(m_cubePos);
         break;
-    case Qt::Key_Left: // Yaw to left
-        m_fpsCamera.rotate(speedRotateDeg, 0.0f);
-        m_orbitCamera.rotate(-speedRotateDeg, 0.0f);
+    case Qt::Key_Left: // Yaw to left (right hand rule, rotate around the y/up axis)
+        if (!m_orbitalCameraMode) m_fpsCamera.rotate(-speedRotateDeg, 0.0f);
+        if (m_orbitalCameraMode) m_orbitCamera.rotate(-speedRotateDeg, 0.0f);
         break;
-    case Qt::Key_Right:// Yaw to right
-        m_fpsCamera.rotate(-speedRotateDeg, 0.0f);
-        m_orbitCamera.rotate(speedRotateDeg, 0.0f);
+    case Qt::Key_Right:// Yaw to right (right hand rule, rotate around the y/up axis)
+        if (!m_orbitalCameraMode) m_fpsCamera.rotate(speedRotateDeg, 0.0f);
+        if (m_orbitalCameraMode) m_orbitCamera.rotate(speedRotateDeg, 0.0f);
         break;
-    case Qt::Key_Up: // Pitch down
-        m_fpsCamera.rotate(0.0f, -speedRotateDeg);
-        m_orbitCamera.rotate(0.0f, -speedRotateDeg);
+    case Qt::Key_Up: // Pitch/rotate up
+        if (!m_orbitalCameraMode) m_fpsCamera.rotate(0.0f, speedRotateDeg);
+        if (m_orbitalCameraMode) m_orbitCamera.rotate(0.0f, speedRotateDeg);
         break;
-    case Qt::Key_Down: // Pitch up
-        m_fpsCamera.rotate(0.0f, speedRotateDeg);
-        m_orbitCamera.rotate(0.0f, speedRotateDeg);
+    case Qt::Key_Down: // Pitch/rotate down
+        if (!m_orbitalCameraMode) m_fpsCamera.rotate(0.0f, -speedRotateDeg);
+        if (m_orbitalCameraMode) m_orbitCamera.rotate(0.0f, -speedRotateDeg);
         break;
     }
 }

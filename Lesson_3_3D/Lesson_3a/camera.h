@@ -19,13 +19,16 @@
 class ICamera
 {
 public:
-    QMatrix4x4 getViewMatrix() const;
+
+    QMatrix4x4 viewMatrix() const { return m_viewMatrix; }
 
     virtual void setPosition(const QVector3D& position) = 0;
     QVector3D position() const { return m_Position; }
+    QVector3D targetPosition() const { return m_TargetPosition; }
     virtual void rotate(float yawDegrees, float pitchDegrees) = 0;
     virtual void setRotation(float yawDegrees, float pitchDegrees) = 0;
     virtual void move(const QVector3D& offsetPos) = 0;
+    virtual void setLookAt(const QVector3D& target) = 0;
 
     const QVector3D& getLook() const;
     const QVector3D& getRight() const;
@@ -40,19 +43,27 @@ protected:
 
     virtual void updateCameraVectors() = 0;
 
+    void setViewMatrix(const QMatrix4x4 & view);
+    void calcViewMatrix();
+
+    QMatrix4x4 m_viewMatrix;
+
     QVector3D m_Position;
-    QVector3D m_TargetPos;
+    QVector3D m_TargetPosition;
     QVector3D m_Look; // Forward vector
     QVector3D m_Up;
     QVector3D m_Right;
     const QVector3D WORLD_UP;
 
     // Euler Angles (in degrees)
-    float m_YawDeg;
-    float m_PitchDeg;
+    float m_YawDeg { 0.0f };
+    float m_PitchDeg { 0.0f };
+
+    // Default camera values degrees
+    const float DEF_FOV = 45.0f;
 
 	// Camera parameters
-    float m_FovDegrees;
+    float m_FovDegrees { DEF_FOV };
 };
 
 //--------------------------------------------------------------
@@ -70,6 +81,9 @@ public:
     void setRotation(float yawDegrees, float pitchDegrees) override;
     void move(const QVector3D& offsetPos) override;
 
+    // Camera Controls
+    void setLookAt(const QVector3D& target) override;
+
 protected:
 
     void updateCameraVectors() override;
@@ -83,13 +97,14 @@ class OrbitCamera : public ICamera
 {
 public:
 
-	OrbitCamera();
+    OrbitCamera(float radius, float yawDegrees, float pitchDegrees);
+    OrbitCamera();
 
     void rotate(float yawDegrees, float pitchDegrees) override;
     void setRotation(float yawDegrees, float pitchDegrees) override;
 
 	// Camera Controls
-    void setLookAt(const QVector3D& target);
+    void setLookAt(const QVector3D& target) override;
 
     // Move nearer or further away
     void setRadius(float radius);
@@ -105,5 +120,5 @@ protected:
 
 private:
 	// Camera parameters
-    float m_Radius;
+    float m_Radius { 1.0f };
 };
