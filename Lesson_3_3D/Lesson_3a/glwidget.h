@@ -67,7 +67,7 @@ private:
     QVector3D m_floorPos;
 
     // Camera
-    FPSCamera m_fpsCamera;
+    PlayerCamera m_playerCamera;
     OrbitCamera m_orbitCamera;
 
     // Statistics data

@@ -25,7 +25,7 @@
 
 GLWidget::GLWidget(QWidget *parent)
     : QOpenGLWidget(parent)
-    , m_fpsCamera(QVector3D(0.0f, 0.0f, 10.0f), QVector3D(0.0f, 0.0f, 0.0f))
+    , m_playerCamera(QVector3D(0.0f, 0.0f, 10.0f), QVector3D(0.0f, 0.0f, 0.0f))
     , m_orbitCamera(10.0f, 0.0f, 0.0f)
     , m_orbitalCameraMode(true)
 {
@@ -199,7 +199,8 @@ void GLWidget::paintGL()
     // Model TSR (rotate, scale, then translate)
     // no rotate
     // scale
-    model.scale(1.0f + sin(timeSecs) * 0.05f);
+    //model.scale(2.0, 1.0, 1.0);
+    model.scale(1.0f + sinf(timeSecs) * 0.05f);
     // translate
     model.translate(m_cubePos);
 
@@ -210,12 +211,12 @@ void GLWidget::paintGL()
     }
     else
     {
-        view = m_fpsCamera.viewMatrix();
+        view = m_playerCamera.viewMatrix();
     }
 
     // Create the projection matrix
     //projection.setToIdentity();
-    projection.perspective(m_fpsCamera.getFOV(), width()/height(), 0.1f, 100.0f);
+    projection.perspective(m_playerCamera.getFOV(), width()/height(), 0.1f, 100.0f);
 
     // Render the rectangle (two triangles)
     // Must be called BEFORE setting uniforms because setting uniforms
@@ -263,6 +264,46 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
 {
     const float speedMove = 0.05f;
     const float speedRotateDeg = 0.5f;
+    bool shiftPressed = (event->modifiers() & Qt::ShiftModifier);
+
+    ///////////////////
+    // Move the cube
+    ///////////////////
+    if (shiftPressed)
+    {
+        switch(event->key())
+        {
+            case Qt::Key_Up:
+            {
+                m_cubePos += QVector3D(0.0f, speedMove, 0.0f);
+                m_orbitCamera.setOrbitCenter(m_cubePos);
+                break;
+            }
+            case Qt::Key_Down:
+            {
+                m_cubePos += QVector3D(0.0f, -speedMove, 0.0f );
+                m_orbitCamera.setOrbitCenter(m_cubePos);
+                break;
+            }
+            case Qt::Key_Left:
+            {
+                m_cubePos += QVector3D(-speedMove, 0.0f, 0.0f);
+                m_orbitCamera.setOrbitCenter(m_cubePos);
+                break;
+            }
+            case Qt::Key_Right:
+            {
+                m_cubePos += QVector3D(speedMove, 0.0f, 0.0f);
+                m_orbitCamera.setOrbitCenter(m_cubePos);
+                break;
+            }
+        }
+        return;
+    }
+
+    ///////////////////
+    // General functions
+    ///////////////////
     switch(event->key())
     {
     case Qt::Key_Escape:
@@ -282,46 +323,107 @@ void GLWidget::keyPressEvent(QKeyEvent *event)
         break;
     case Qt::Key_F3:
         m_orbitalCameraMode = !m_orbitalCameraMode;
-        m_fpsCamera.setPosition(QVector3D(0.0f, 0.0f, 10.0f));
-        m_fpsCamera.setRotation(0.0f, 0.0f);
+        m_playerCamera.setPosition(QVector3D(0.0f, 0.0f, 10.0f));
+        m_playerCamera.setRotation(0.0f, 0.0f);
         m_orbitCamera.setRadius(10.0f);
         m_orbitCamera.setRotation(0.0f, 0.0f);
         qInfo() << "Application - toggle orbital camera mode." << m_orbitalCameraMode;
         break;
-    case Qt::Key_W: // Camera forward (-z)
-        if (!m_orbitalCameraMode) m_fpsCamera.move(QVector3D(0.0f, 0.0f, -speedMove));
-        if (m_orbitalCameraMode) m_orbitCamera.setRadius(m_orbitCamera.radius()-speedMove);
-        break;
-    case Qt::Key_S: // Camera backup (+z)
-        if (!m_orbitalCameraMode) m_fpsCamera.move(QVector3D(0.0f, 0.0f, speedMove));
-        if (m_orbitalCameraMode) m_orbitCamera.setRadius(m_orbitCamera.radius()+speedMove);
-        break;
-    case Qt::Key_A: // Camera move left
-        if (!m_orbitalCameraMode) m_fpsCamera.move(QVector3D(-speedMove, 0.0f, 0.0f));
-        break;
-    case Qt::Key_D: // Camera move right
-        if (!m_orbitalCameraMode) m_fpsCamera.move(QVector3D(speedMove, 0.0f, 0.0f));
-        break;
-    case Qt::Key_L: // Camera move right
-        if (!m_orbitalCameraMode) m_fpsCamera.setLookAt(m_cubePos);
-        if (m_orbitalCameraMode) m_orbitCamera.setLookAt(m_cubePos);
-        break;
-    case Qt::Key_Left: // Yaw to left (right hand rule, rotate around the y/up axis)
-        if (!m_orbitalCameraMode) m_fpsCamera.rotate(-speedRotateDeg, 0.0f);
-        if (m_orbitalCameraMode) m_orbitCamera.rotate(-speedRotateDeg, 0.0f);
-        break;
-    case Qt::Key_Right:// Yaw to right (right hand rule, rotate around the y/up axis)
-        if (!m_orbitalCameraMode) m_fpsCamera.rotate(speedRotateDeg, 0.0f);
-        if (m_orbitalCameraMode) m_orbitCamera.rotate(speedRotateDeg, 0.0f);
-        break;
-    case Qt::Key_Up: // Pitch/rotate up
-        if (!m_orbitalCameraMode) m_fpsCamera.rotate(0.0f, speedRotateDeg);
-        if (m_orbitalCameraMode) m_orbitCamera.rotate(0.0f, speedRotateDeg);
-        break;
-    case Qt::Key_Down: // Pitch/rotate down
-        if (!m_orbitalCameraMode) m_fpsCamera.rotate(0.0f, -speedRotateDeg);
-        if (m_orbitalCameraMode) m_orbitCamera.rotate(0.0f, -speedRotateDeg);
-        break;
+    }
+
+    if (m_orbitalCameraMode)
+    {
+        ////////////////////////////
+        // OrbitalCamera control
+        ////////////////////////////
+        switch(event->key())
+        {
+        case Qt::Key_W: // Camera forward (-z)
+            m_orbitCamera.setRadius(m_orbitCamera.radius()-speedMove);
+            break;
+        case Qt::Key_S: // Camera backup (+z)
+            m_orbitCamera.setRadius(m_orbitCamera.radius()+speedMove);
+            break;
+        case Qt::Key_A: // Not used
+            break;
+        case Qt::Key_D: // Not used
+            break;
+        case Qt::Key_L: // Camera move right
+            m_orbitCamera.setLookAt(m_cubePos);
+            break;
+        case Qt::Key_Left: // Yaw to left (right hand rule, rotate around the y/up axis)
+            m_orbitCamera.rotate(-speedRotateDeg, 0.0f);
+            break;
+        case Qt::Key_Right:// Yaw to right (right hand rule, rotate around the y/up axis)
+            m_orbitCamera.rotate(speedRotateDeg, 0.0f);
+            break;
+        case Qt::Key_Up: // Pitch/rotate up
+            m_orbitCamera.rotate(0.0f, speedRotateDeg);
+            break;
+        case Qt::Key_Down: // Pitch/rotate down
+            m_orbitCamera.rotate(0.0f, -speedRotateDeg);
+            break;
+        }
+    }
+    else
+    {
+        ////////////////////////////
+        // PlayerCamera control
+        ////////////////////////////
+        switch(event->key())
+        {
+        case Qt::Key_W:
+        {
+            // Camera forward (-z)
+            auto look = m_playerCamera.lookVector();
+            look *= speedMove;
+            look.setY(0.0f); // stay on the ground
+            m_playerCamera.move(look);
+            break;
+        }
+        case Qt::Key_S:
+        {
+            // Camera backup (+z)
+            auto look = m_playerCamera.lookVector();
+            look *= -speedMove;
+            look.setY(0.0f); // stay on the ground
+            m_playerCamera.move(look);
+            break;
+        }
+        case Qt::Key_A:
+        {
+            // Camera move left
+            auto look = m_playerCamera.rightVector();
+            look *= -speedMove;
+            look.setY(0.0f); // stay on the ground
+            m_playerCamera.move(look);
+            break;
+        }
+        case Qt::Key_D:
+        {
+            // Camera move right
+            auto look = m_playerCamera.rightVector();
+            look *= speedMove;
+            look.setY(0.0f); // stay on the ground
+            m_playerCamera.move(look);
+            break;
+        }
+        case Qt::Key_L: // Camera pitch and yaw set to look at cube
+            m_playerCamera.setLookAt(m_cubePos);
+            break;
+        case Qt::Key_Left: // Yaw to left (right hand rule, rotate around the y/up axis)
+            m_playerCamera.rotate(-speedRotateDeg, 0.0f);
+            break;
+        case Qt::Key_Right:// Yaw to right (right hand rule, rotate around the y/up axis)
+            m_playerCamera.rotate(speedRotateDeg, 0.0f);
+            break;
+        case Qt::Key_Up: // Pitch up
+            m_playerCamera.rotate(0.0f, speedRotateDeg);
+            break;
+        case Qt::Key_Down: // Pitch down
+            m_playerCamera.rotate(0.0f, -speedRotateDeg);
+            break;
+        }
     }
 }
 
