@@ -1,7 +1,9 @@
 <RCC>
     <qresource prefix="/">
-        <file>Shaders/basictexture.frag</file>
-        <file>Shaders/basictexture.vert</file>
+        <file>Shaders/basictexture3D.frag</file>
+        <file>Shaders/basictexture3D.vert</file>
         <file>Images/funpic.jpg</file>
+        <file>Images/grid.jpg</file>
+        <file>Meshes/Cube.mesh</file>
     </qresource>
 </RCC>

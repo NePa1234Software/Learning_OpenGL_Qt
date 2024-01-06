@@ -135,7 +135,7 @@ void ShaderProgram::setUniform(const GLchar* name, const QVector2D & v)
 void ShaderProgram::setUniform(const GLchar* name, const QVector3D & v)
 {
     if (!m_program) return;
-    int loc = getUniformLocation(name);
+    int loc = m_program->uniformLocation(name);
     m_program->setUniformValue(loc, v);
 }
 
@@ -144,6 +144,15 @@ void ShaderProgram::setUniform(const GLchar* name, const QVector4D & v)
     if (!m_program) return;
     int loc = getUniformLocation(name);
     m_program->setUniformValue(loc, v);
+}
+
+void ShaderProgram::setUniform(const GLchar *name, const QMatrix4x4 &m)
+{
+    if (!m_program) return;
+    GLint loc = getUniformLocation(name);
+    // constData is column major data, thus no transpose needed
+    m_program->setUniformValue(loc, m);
+    //m_program->glUniformMatrix4fv(loc, 1, GL_FALSE, m.constData());
 }
 
 int ShaderProgram::getUniformLocation(const GLchar* name)

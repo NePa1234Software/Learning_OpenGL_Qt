@@ -21,6 +21,7 @@
 #include <QVector2D>
 #include <QVector3D>
 #include <QVector4D>
+#include <QMatrix4x4>
 #include <QOpenGLFunctions_3_3_Core>
 #include <QOpenGLShaderProgram>
 
@@ -61,6 +62,7 @@ public:
     void setUniform(const GLchar* name, const QVector2D & v);
     void setUniform(const GLchar* name, const QVector3D & v);
     void setUniform(const GLchar* name, const QVector4D & v);
+    void setUniform(const GLchar* name, const QMatrix4x4 & m);
 
 private:
 

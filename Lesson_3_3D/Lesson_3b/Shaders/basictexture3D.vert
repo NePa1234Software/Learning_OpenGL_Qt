@@ -20,12 +20,14 @@ layout (location = 0) in vec3 pos;
 layout (location = 1) in vec2 texCoord;
 out vec2 TexCoord;
 
-// Transform offset set by the application on each update
-uniform vec2 posOffset;
+// 3D MVP matrices
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
 
 void main()
 {
     // gl_Position is the OpenGL built in variable which is passed to the fragment shader
-    gl_Position = vec4(pos.x + posOffset.x, pos.y + posOffset.y, pos.z, 1.0);
+    gl_Position = projection * view * model * vec4(pos, 1.0);
     TexCoord = texCoord;
 }

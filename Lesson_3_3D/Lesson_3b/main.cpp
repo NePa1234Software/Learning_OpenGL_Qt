@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
     //! [1]
 
     MainWindow mw;
-    mw.resize(800, 400);
+    mw.resize(1200, 800);
     mw.show();
 
     return a.exec();

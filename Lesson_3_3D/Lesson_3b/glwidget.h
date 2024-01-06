@@ -13,20 +13,21 @@
 
 #include "shaderprogram.h"
 #include "texture2D.h"
+#include "camera.h"
 
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
 #include <QElapsedTimer>
 #include <QOpenGLFunctions_3_3_Core>
 #include <QTime>
-
+#include <QVector3D>
 #include <QOpenGLBuffer>
 #include <QOpenGLVertexArrayObject>
 
 ///
 /// \brief The GLWidget class uses QOpenGLWidget which will provide the OpenGL context and render target.
 /// QOpenGLFunctions_3_3_Core will give access to all OpenGL function of this version.
-/// New to Lesson 1b is the use of the classes : QOpenGLBuffer and QOpenGLTexture
+/// New to Lesson 2b is the use of the classes : QMesh
 ///
 class GLWidget : public QOpenGLWidget, public QOpenGLFunctions_3_3_Core // QOpenGLFunctions for newest
 {
@@ -60,9 +61,15 @@ private:
     ShaderProgram m_shaderProgram;
     QColor m_background {Qt::red};
     QOpenGLBuffer m_vbo;
-    QOpenGLBuffer m_ibo;
     QOpenGLVertexArrayObject m_vao;
     Texture2D m_texture;
+    Texture2D m_textureFloor;
+    QVector3D m_cubePos;
+    QVector3D m_floorPos;
+
+    // Camera
+    PlayerCamera m_playerCamera;
+    OrbitCamera m_orbitCamera;
 
     // Statistics data
     unsigned int m_frameCount {0};
@@ -72,6 +79,7 @@ private:
 
     // User interaction
     bool m_wireframeMode {false};
+    bool m_orbitalCameraMode {false};
     bool m_timerStarted {false};
     int m_timerId;
 };

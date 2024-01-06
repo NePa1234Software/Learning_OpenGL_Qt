@@ -19,10 +19,7 @@ out vec4 frag_color;
 
 uniform sampler2D texSampler;
 
-// draw color is set by the application on each update
-uniform vec4 vertColor;
-
 void main()
 {
-    frag_color = mix( texture(texSampler, TexCoord) , vertColor, 0.3 );
+    frag_color = texture(texSampler, TexCoord);
 }

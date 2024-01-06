@@ -15,13 +15,13 @@
 
 #include <QMainWindow>
 
-const QString MainWindow::APP_TITLE = "Lesson 2b OpenGL Textures";
+const QString MainWindow::APP_TITLE = "Lesson 3b OpenGL Textures in 3D";
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow{parent}
 {
     setWindowTitle(APP_TITLE);
-    resize(500,500);
+    resize(800,400);
 
     GLWidget *glwidget = new GLWidget(this);
     setCentralWidget(glwidget);

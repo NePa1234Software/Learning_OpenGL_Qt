@@ -18,6 +18,7 @@ add_executable(lesson_3b
   glwidget.h glwidget.cpp
   shaderprogram.cpp shaderprogram.h
   texture2D.cpp texture2D.h
+  camera.cpp camera.h
   resources.qrc
 )
 target_link_libraries(lesson_3b PRIVATE
