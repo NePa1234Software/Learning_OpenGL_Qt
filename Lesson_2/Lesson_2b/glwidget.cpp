@@ -157,6 +157,7 @@ void GLWidget::cleanup()
     makeCurrent();
     m_shaderProgram.unloadShaders();
     m_vbo.destroy();
+    m_ibo.destroy();
     doneCurrent();
 
     // Disconnect to the current context

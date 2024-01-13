@@ -22,6 +22,10 @@
 #include <QTime>
 #include <QMatrix4x4>
 #include <QVector3D>
+#include <Qt3DExtras/QCuboidMesh>
+#include <Qt3DRender/QMesh>
+#include <Qt3DCore/QEntity>
+#include <Qt3DExtras/QCuboidGeometry>
 
 GLWidget::GLWidget(QWidget *parent)
     : QOpenGLWidget(parent)
@@ -29,6 +33,7 @@ GLWidget::GLWidget(QWidget *parent)
     , m_orbitCamera(10.0f, 0.0f, 0.0f)
     , m_orbitalCameraMode(true)
     , m_vbo(QOpenGLBuffer::VertexBuffer)
+    , m_ibo(QOpenGLBuffer::IndexBuffer)
 {
     // No need to do any OpenGL stuff here as Qt will
     // Call initializeGL after setting the currect context.
@@ -66,57 +71,54 @@ void GLWidget::initializeGL()
     qInfo() << "Initialize : Vertex Buffer Object (vbo)";
     // Set up an array of vertices for a quad (2 triangls)
     // with an index buffer data
-    GLfloat cubeVertices[] = {
-        // position		 // tex coords
+    Qt3DExtras::QCuboidMesh * cubeVertices = new Qt3DExtras::QCuboidMesh();
+    cubeVertices->setXExtent(2.0);
+    cubeVertices->setYExtent(2.0);
+    cubeVertices->setZExtent(2.0);
 
-        // front face
-        -1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
-         1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
-         1.0f,  1.0f,  1.0f, 1.0f, 1.0f,
-        -1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
-        -1.0f, -1.0f,  1.0f, 0.0f, 0.0f,
-         1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
+    // Qt3DCore::QEntity *cubeEntity1 = new Qt3DCore::QEntity();
+    // cubeEntity1->setObjectName(QStringLiteral("Cube 1"));
+    // cubeEntity1->addComponent(cubeVertices);
 
-        // back face
-        -1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
-         1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
-         1.0f,  1.0f, -1.0f, 1.0f, 1.0f,
-        -1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
-        -1.0f, -1.0f, -1.0f, 0.0f, 0.0f,
-         1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
+    qInfo() << "Cuboid mesh geometry: " << cubeVertices->geometry();
+    qInfo() << "Cuboid mesh primitiveType: " << cubeVertices->primitiveType();
+    qInfo() << "Cuboid mesh vertexCount: " << cubeVertices->vertexCount();
+    Qt3DExtras::QCuboidGeometry * cubeGeometry = qobject_cast<Qt3DExtras::QCuboidGeometry *>(cubeVertices->view()->geometry());
+    Q_ASSERT(cubeGeometry);
+    qInfo() << "Cuboid vertices: " << cubeGeometry->positionAttribute()->name() << cubeGeometry->positionAttribute()->attributeType() << cubeGeometry->positionAttribute()->buffer();
+    qInfo() << "Cuboid texCoord: " << cubeGeometry->texCoordAttribute()->name() << cubeGeometry->texCoordAttribute()->attributeType() << cubeGeometry->texCoordAttribute()->buffer();
+    qInfo() << "Cuboid vertices buffersize: " << cubeGeometry->positionAttribute()->buffer()->data().size();
+    qInfo() << "Cuboid texCoord buffersize: " << cubeGeometry->texCoordAttribute()->buffer()->data().size();
 
-        // left face
-        -1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
-        -1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
-        -1.0f,  1.0f,  1.0f, 1.0f, 1.0f,
-        -1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
-        -1.0f, -1.0f, -1.0f, 0.0f, 0.0f,
-        -1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
-
-        // right face
-        1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
-        1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
-        1.0f,  1.0f, -1.0f, 1.0f, 1.0f,
-        1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
-        1.0f, -1.0f,  1.0f, 0.0f, 0.0f,
-        1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
-
-        // top face
-        -1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
-         1.0f,  1.0f,  1.0f, 1.0f, 0.0f,
-         1.0f,  1.0f, -1.0f, 1.0f, 1.0f,
-        -1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
-        -1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
-         1.0f,  1.0f,  1.0f, 1.0f, 0.0f,
-
-        // bottom face
-        -1.0f, -1.0f,  1.0f, 0.0f, 1.0f,
-         1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
-         1.0f, -1.0f,  1.0f, 1.0f, 1.0f,
-        -1.0f, -1.0f,  1.0f, 0.0f, 1.0f,
-        -1.0f, -1.0f, -1.0f, 0.0f, 0.0f,
-         1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
-    };
+    int floatCount = cubeGeometry->positionAttribute()->buffer()->data().size() / 4;
+    const float * floatPointer = reinterpret_cast<const float *>(cubeGeometry->positionAttribute()->buffer()->data().constData());
+    int byteStride = cubeGeometry->positionAttribute()->byteStride();
+    int floatStride = byteStride / 4;
+    qInfo() << "Cuboid vertex stride (byte/float) : " << byteStride << floatStride;
+    int tt = 1;
+    for (int ii = 0; ii < floatCount; ii = ii + floatStride)
+    {
+        qInfo() << "vertex:" << tt++;
+        qInfo() << " position x:" << floatPointer[ii ] << cubeGeometry->positionAttribute()->byteOffset();
+        qInfo() << " position y:" << floatPointer[ii + 1];
+        qInfo() << " position z:" << floatPointer[ii + 2];
+        qInfo() << " texCoord x:" << floatPointer[ii + 3] << cubeGeometry->texCoordAttribute()->byteOffset();
+        qInfo() << " texCoord y:" << floatPointer[ii + 4];
+        qInfo() << " normal   x:" << floatPointer[ii + 5] << cubeGeometry->normalAttribute()->byteOffset();
+        qInfo() << " normal   y:" << floatPointer[ii + 6];
+        qInfo() << " normal   z:" << floatPointer[ii + 7];
+        qInfo() << " tangent  x:" << floatPointer[ii + 8] << cubeGeometry->tangentAttribute()->byteOffset();
+        qInfo() << " tangent  y:" << floatPointer[ii + 9];
+        qInfo() << " tangent  z:" << floatPointer[ii + 10];
+        qInfo() << " tangent  w:" << floatPointer[ii + 11];
+    }
+    int intCount = cubeGeometry->indexAttribute()->buffer()->data().size() / 2;
+    const quint16 * indexPointer = reinterpret_cast<const quint16 *>(cubeGeometry->indexAttribute()->buffer()->data().constData());
+    tt = 1;
+    for (int ii = 0; ii < intCount; ii++)
+    {
+        qInfo() << "index: " << tt++ << ", value :" << indexPointer[ii];
+    }
 
     // Cube and floor positions
     m_cubePos = QVector3D(0.0f, 0.0f, 0.0f);
@@ -147,7 +149,8 @@ void GLWidget::initializeGL()
     }
     m_vbo.bind();
     m_vbo.setUsagePattern(QOpenGLBuffer::StaticDraw);
-    m_vbo.allocate(&cubeVertices, sizeof(cubeVertices));
+    m_vbo.allocate(cubeGeometry->positionAttribute()->buffer()->data().constData(),
+                   cubeGeometry->positionAttribute()->buffer()->data().size());
 
     qInfo() << "Initialize : Vertex Array Object (vao)";
 
@@ -155,17 +158,33 @@ void GLWidget::initializeGL()
     // https://registry.khronos.org/OpenGL-Refpages/es3/html/glVertexAttribPointer.xhtml
     // 3 floats of data that should not be normalized (data is normalized to the viewport already)
     // Stride of 5 floats (3x4=12 bytes per vertex + 2x4=8 bytes for texture position, stride is then 20)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(0));
+    quint64 byteOffset = cubeGeometry->positionAttribute()->byteOffset();
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, byteStride, (GLvoid*)(byteOffset) );
 
     // Enable the first attribute or attribute index 0
     glEnableVertexAttribArray(0);
 
     // Same stride but offset is 3*3 floats
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+    byteOffset = cubeGeometry->texCoordAttribute()->byteOffset();
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, byteStride, (GLvoid*)(byteOffset) );
     glEnableVertexAttribArray(1);
+
+    // Set up index buffer which is used to indexed based vertex lookup
+    // which reduces the number of vertices. Instead of 6, now we only need 4 vertices.
+    qInfo() << "Initialize : Vertex Index Object (vao)";
+
+    if (!m_ibo.create()) {
+        qWarning() << "Initialize : ibo failed!";
+        return;
+    }
+    m_ibo.bind();
+    m_ibo.setUsagePattern(QOpenGLBuffer::StaticDraw);
+    m_ibo.allocate(cubeGeometry->indexAttribute()->buffer()->data().constData(), cubeGeometry->indexAttribute()->buffer()->data().size());
 
     // "unbind" is good to make sure other code doesn't change it elsewhere
     glBindVertexArray(0);
+
+    delete cubeVertices;
 
     qInfo() << "Initialize : Shaders ";
     m_shaderProgram.loadShaders(":/Shaders/basictexture3D.vert",
@@ -173,6 +192,16 @@ void GLWidget::initializeGL()
 
     m_texture.loadTexture(":/Images/funpic.jpg", true);
     m_textureFloor.loadTexture(":/Images/grid.jpg", true);
+
+    // QMesh helper can be used to load and parse our 3D object file
+    //Qt3DRender::QMesh *mesh = new Qt3DRender::QMesh();
+    //mesh->setSource(QUrl(QStringLiteral("qrc:/object1.obj")));
+    //qInfo() << "Initialize mesh: " << mesh->status();
+    //mesh->dumpObjectTree();
+    //mesh->dumpObjectInfo();
+
+    //Qt3DCore::QEntity *object = new Qt3DCore::QEntity( /* rootEntity */ );
+    //object->addComponent(mesh);
 
     qInfo() << "Initialize : DONE ... start the update timer";
     m_programStart = QTime::currentTime();
@@ -186,7 +215,10 @@ void GLWidget::cleanup()
 
     makeCurrent();
     m_shaderProgram.unloadShaders();
+    m_texture.destroy();
+    m_textureFloor.destroy();
     m_vbo.destroy();
+    m_ibo.destroy();
     doneCurrent();
 
     // Disconnect to the current context
@@ -251,8 +283,9 @@ void GLWidget::paintGL()
     // The triangles will be drawn with this mode
     glPolygonMode(GL_FRONT_AND_BACK, m_wireframeMode ? GL_LINE : GL_FILL);
 
-    // Draw the "elements" - 0 offset
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    // Draw the cube - 0 offset
+    // glDrawArrays(GL_TRIANGLES, 0, 36);
+    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, 0);
 
     // Position below the cube and squash it flat
     model.setToIdentity();
@@ -265,7 +298,10 @@ void GLWidget::paintGL()
     m_textureFloor.bind();
 
     // Draw the floor using the same squashed cubeVertices
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    //glDrawArrays(GL_TRIANGLES, 0, 36);
+
+    // Draw the "elements" - 0 offset
+    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, 0);
 
     // "unbind" to ensure no further changes the vao can be made
     glBindVertexArray(0);

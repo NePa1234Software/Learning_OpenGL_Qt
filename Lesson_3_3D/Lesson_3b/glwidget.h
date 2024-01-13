@@ -61,6 +61,7 @@ private:
     ShaderProgram m_shaderProgram;
     QColor m_background {Qt::red};
     QOpenGLBuffer m_vbo;
+    QOpenGLBuffer m_ibo;
     QOpenGLVertexArrayObject m_vao;
     Texture2D m_texture;
     Texture2D m_textureFloor;

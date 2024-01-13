@@ -10,7 +10,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui OpenGL OpenGLWidgets Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui OpenGL OpenGLWidgets Widgets Quick3d 3DCore 3DExtras)
 
 add_executable(lesson_3b
   main.cpp
@@ -27,6 +27,9 @@ target_link_libraries(lesson_3b PRIVATE
     Qt6::OpenGL
     Qt6::OpenGLWidgets
     Qt6::Widgets
+    Qt6::Quick3D
+    Qt6::3DCore
+    Qt6::3DExtras
 )
 
 install(TARGETS lesson_3b
